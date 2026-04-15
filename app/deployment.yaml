@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acquisitions-api
+  namespace: acquisitions
+  labels:
+    app: acquisitions-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: acquisitions-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1           # One extra pod during update
+      maxUnavailable: 0     # Never go below 3 pods during update
+  template:
+    metadata:
+      labels:
+        app: acquisitions-api
+    spec:
+      containers:
+        - name: acquisitions-api
+          image: himanshunehete/kubernetes-demo-api:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: acquisitions-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: acquisitions-secrets
+                  key: database-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: acquisitions-secrets
+                  key: jwt-secret
+            - name: ARCJET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: acquisitions-secrets
+                  key: arcjet-key
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
