@@ -44,6 +44,8 @@ spec:
                 secretKeyRef:
                   name: acquisitions-secrets
                   key: arcjet-key
+            - name: ARCJET_ENV
+              value: development
           livenessProbe:
             httpGet:
               path: /health
