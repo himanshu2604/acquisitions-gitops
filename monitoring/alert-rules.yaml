@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: acquisitions-api-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: acquisitions-api.rules
+      interval: 30s
+      rules:
+
+        # Alert 1: Pod is restarting too many times
+        - alert: AcquisitionsPodCrashLooping
+          expr: |
+            kube_pod_container_status_restarts_total{
+              namespace="acquisitions",
+              pod=~"acquisitions-api-.*"
+            } > 3
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash looping"
+            description: "Restarted {{ $value }} times. Check: kubectl logs {{ $labels.pod }} -n acquisitions"
+
+        # Alert 2: CPU is sustained high
+        - alert: AcquisitionsHighCPU
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{
+              namespace="acquisitions"
+            }[5m])) by (pod) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU on pod {{ $labels.pod }}"
+            description: "CPU above 80% for 5 minutes"
+
+        # Alert 3: Too many 5xx errors
+        - alert: AcquisitionsHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{
+              app="acquisitions-api",
+              status_code=~"5.."
+            }[5m]))
+            /
+            sum(rate(http_requests_total{
+              app="acquisitions-api"
+            }[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "API error rate above 5%"
+            description: "{{ $value | humanizePercentage }} of requests are failing"
