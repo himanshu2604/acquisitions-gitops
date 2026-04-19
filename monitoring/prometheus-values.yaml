@@ -1,31 +1,60 @@
+# Disable heavy components
 grafana:
   enabled: true
-  adminPassword: "admin123"  # Change this in production!
-  service:
-    type: NodePort
-    nodePort: 32000
+  adminPassword: "admin123"
+  resources:
+    requests:
+      memory: "100Mi"
+      cpu: "50m"
+    limits:
+      memory: "200Mi"
+      cpu: "200m"
 
 prometheus:
   enabled: true
   prometheusSpec:
-    scrapeInterval: 15s
-    # Allow scraping pods outside the monitoring namespace
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
-    # Tell Prometheus to also scrape YOUR API pods
+    scrapeInterval: 30s          # scrape less frequently
+    retention: 6h                # keep less data
+    resources:
+      requests:
+        memory: "200Mi"
+        cpu: "100m"
+      limits:
+        memory: "400Mi"
+        cpu: "300m"
     additionalScrapeConfigs:
       - job_name: 'acquisitions-api'
         static_configs:
           - targets:
               - 'acquisitions-api-service.acquisitions.svc.cluster.local:80'
         metrics_path: '/metrics'
-        scrape_interval: 15s
+        scrape_interval: 30s
 
+# Disable these — they are the heaviest parts
 alertmanager:
-  enabled: true
+  enabled: false
 
 nodeExporter:
-  enabled: true       # Scrapes CPU, memory, disk from each K8s node
+  enabled: false
 
 kubeStateMetrics:
-  enabled: true       # Scrapes pod/deployment health and status
+  enabled: false
+
+# Disable all the built-in K8s monitoring rules (saves memory)
+defaultRules:
+  create: false
+
+kubeApiServer:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
