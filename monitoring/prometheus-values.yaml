@@ -1,0 +1,31 @@
+grafana:
+  enabled: true
+  adminPassword: "admin123"  # Change this in production!
+  service:
+    type: NodePort
+    nodePort: 32000
+
+prometheus:
+  enabled: true
+  prometheusSpec:
+    scrapeInterval: 15s
+    # Allow scraping pods outside the monitoring namespace
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    # Tell Prometheus to also scrape YOUR API pods
+    additionalScrapeConfigs:
+      - job_name: 'acquisitions-api'
+        static_configs:
+          - targets:
+              - 'acquisitions-api-service.acquisitions.svc.cluster.local:80'
+        metrics_path: '/metrics'
+        scrape_interval: 15s
+
+alertmanager:
+  enabled: true
+
+nodeExporter:
+  enabled: true       # Scrapes CPU, memory, disk from each K8s node
+
+kubeStateMetrics:
+  enabled: true       # Scrapes pod/deployment health and status
