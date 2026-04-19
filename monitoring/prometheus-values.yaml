@@ -1,20 +1,8 @@
-# Disable heavy components
-grafana:
-  enabled: true
-  adminPassword: "admin123"
-  resources:
-    requests:
-      memory: "100Mi"
-      cpu: "50m"
-    limits:
-      memory: "200Mi"
-      cpu: "200m"
-
 prometheus:
   enabled: true
   prometheusSpec:
-    scrapeInterval: 30s          # scrape less frequently
-    retention: 6h                # keep less data
+    scrapeInterval: 30s
+    retention: 6h
     resources:
       requests:
         memory: "200Mi"
@@ -23,6 +11,8 @@ prometheus:
         memory: "400Mi"
         cpu: "300m"
     additionalScrapeConfigs:
+
+      # Your API (already there)
       - job_name: 'acquisitions-api'
         static_configs:
           - targets:
@@ -30,31 +20,20 @@ prometheus:
         metrics_path: '/metrics'
         scrape_interval: 30s
 
-# Disable these — they are the heaviest parts
-alertmanager:
-  enabled: false
+      - job_name: 'argocd-metrics'
+        static_configs:
+          - targets:
+              - 'argocd-metrics.argocd.svc.cluster.local:8082'
+        scrape_interval: 30s
 
-nodeExporter:
-  enabled: false
+      - job_name: 'argocd-server-metrics'
+        static_configs:
+          - targets:
+              - 'argocd-server-metrics.argocd.svc.cluster.local:8083'
+        scrape_interval: 30s
 
-kubeStateMetrics:
-  enabled: false
-
-# Disable all the built-in K8s monitoring rules (saves memory)
-defaultRules:
-  create: false
-
-kubeApiServer:
-  enabled: false
-
-kubeControllerManager:
-  enabled: false
-
-kubeScheduler:
-  enabled: false
-
-kubeProxy:
-  enabled: false
-
-kubeEtcd:
-  enabled: false
+      - job_name: 'argocd-repo-server'
+        static_configs:
+          - targets:
+              - 'argocd-repo-server.argocd.svc.cluster.local:8084'
+        scrape_interval: 30s
